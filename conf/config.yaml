@@ -1,0 +1,48 @@
+defaults:
+  - _self_
+
+# ------------------------------------------------------------------ #
+# Scene & bookkeeping
+apt: apartment_1          
+exp_name: baseline        
+seed: 0
+data_root: ./data/processed
+geometry_root: ./data/GWA
+
+# ------------------------------------------------------------------ #
+# Data & model hyper-parameters
+batch_size: 256
+sample_cols: 40           
+n_fft: 512
+L: 15
+h: 256
+sr: 22050
+alpha: 0.5                
+
+dataloader:
+  num_workers: 0
+  pin_memory: true
+
+# ------------------------------------------------------------------ #
+# Optimisation
+trainer:
+  max_epochs: 100
+  accelerator: auto
+  devices: 1
+  precision: 32-true
+  accumulate_grad_batches: 1
+
+optimizer:
+  lr_mag:   5e-4
+  lr_phase: 1e-4
+  lr_decay: 0.975           # γ of exponential scheduler
+  weight_decay: 0
+
+# ------------------------------------------------------------------ #
+# TensorBoard logging
+tb_image_freq: 200
+
+
+# ------------------------------------------------------------------ #
+# Test parameters
+ckpt_path: null

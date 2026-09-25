@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.ckpt
+*.h5
+*.npy
+*.pkl
+.hydra/
+.idea/
+.vscode/
+.DS_Store
+data/
+results/
+lightning_logs/
+outputs/
+multirun/
