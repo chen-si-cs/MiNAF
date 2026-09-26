@@ -2,7 +2,7 @@ name: minaf
 channels:
   - conda-forge
 dependencies:
-  - python=3.12
+  - python>=3.9,<3.13
   - h5py
   - hydra-core=1.3
   - librosa
@@ -10,7 +10,10 @@ dependencies:
   - numpy
   - pillow
   - scipy
+  - soundfile
   - tensorboard
+  - trimesh
+  - rtree
   - tqdm
   - pip
   - pip:

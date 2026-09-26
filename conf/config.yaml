@@ -6,14 +6,18 @@ defaults:
 apt: apartment_1          
 exp_name: baseline        
 seed: 0
+dataset_type: gwa
 data_root: ./data/processed
 geometry_root: ./data/GWA
+metadata_root: ./data/metadata
 
 # ------------------------------------------------------------------ #
 # Data & model hyper-parameters
 batch_size: 256
 sample_cols: 40           
 n_fft: 512
+n_rays: 1024
+n_occlusion: 14
 L: 15
 h: 256
 sr: 22050

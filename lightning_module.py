@@ -34,8 +34,16 @@ class RIRLightning(pl.LightningModule):
         self.save_hyperparameters(cfg)
 
         n_freq = cfg.n_fft // 2 + 1
-        self.mag_net = RIRNetwork(cfg.L, cfg.h, n_freq, self.device)
-        self.phase_net = RIRNetwork(cfg.L, cfg.h, n_freq, self.device)
+        network_kwargs = {
+            "L": cfg.L,
+            "h": cfg.h,
+            "F": n_freq,
+            "device": self.device,
+            "n_rays": cfg.n_rays,
+            "n_occlusion": cfg.n_occlusion,
+        }
+        self.mag_net = RIRNetwork(**network_kwargs)
+        self.phase_net = RIRNetwork(**network_kwargs)
 
         self.alpha = cfg.alpha
         self.automatic_optimization = False

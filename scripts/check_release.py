@@ -8,9 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 PYTHON_FILES = sorted(ROOT.rglob("*.py"))
 REQUIRED_FILES = [
     ROOT / "README.md",
+    ROOT / "PREPROCESSING.md",
     ROOT / "DATA_FORMAT.md",
     ROOT / "environment.yml",
     ROOT / "conf" / "config.yaml",
+    ROOT / "scripts" / "preprocess_soundspaces.py",
+    ROOT / "scripts" / "preprocess_gwa.py",
 ]
 
 
@@ -32,23 +35,32 @@ def check_model() -> None:
     from network import RIRNetwork
 
     batch_size = 2
-    model = RIRNetwork(L=15, h=256, F=257, device="cpu").eval()
-    with torch.no_grad():
-        output = model(
-            torch.randn(batch_size, 3),
-            torch.randn(batch_size, 3),
-            torch.randn(batch_size, 6158),
-            torch.randn(batch_size, 6158),
-            torch.tensor(0.25),
-        )
-
     expected_shape = (batch_size, 257)
-    if tuple(output.shape) != expected_shape:
-        raise AssertionError(f"Expected {expected_shape}, got {tuple(output.shape)}")
-    if not torch.isfinite(output).all():
-        raise AssertionError("Model output contains non-finite values")
+    for n_occlusion in (8, 14):
+        model = RIRNetwork(
+            L=15,
+            h=256,
+            F=257,
+            device="cpu",
+            n_rays=1024,
+            n_occlusion=n_occlusion,
+        ).eval()
+        feature_size = 6 * 1024 + n_occlusion
+        with torch.no_grad():
+            output = model(
+                torch.randn(batch_size, 3),
+                torch.randn(batch_size, 3),
+                torch.randn(batch_size, feature_size),
+                torch.randn(batch_size, feature_size),
+                torch.tensor(0.25),
+            )
 
-    print(f"Model check passed: output shape {tuple(output.shape)}.")
+        if tuple(output.shape) != expected_shape:
+            raise AssertionError(f"Expected {expected_shape}, got {tuple(output.shape)}")
+        if not torch.isfinite(output).all():
+            raise AssertionError("Model output contains non-finite values")
+
+    print("Model check passed for SoundSpaces and GWA feature layouts.")
 
 
 def main() -> None:

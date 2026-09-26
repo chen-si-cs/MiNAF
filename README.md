@@ -31,6 +31,17 @@
 
 These geometric features are fused with positional and temporal embeddings to predict the log-magnitude and instantaneous-frequency spectra of the RIR. MiNAF provides accurate acoustic-field predictions across different room layouts and remains robust when training data are limited or the input meshes are noisy or reconstructed.
 
+---
+
+## 🗺️ Release Status
+
+| Component | Status |
+|---|---|
+| **MiNAF model, training, and evaluation code** | ✅ Released |
+| **SoundSpaces / Replica preprocessing** | ✅ Released |
+| **GWA preprocessing** | ✅ Released |
+| **Processed-data format documentation** | ✅ Released — see [DATA_FORMAT.md](DATA_FORMAT.md) |
+| **Official Interspeech PDF** | 🔜 Coming soon |
 
 ---
 
@@ -55,42 +66,59 @@ Run the release checks:
 ```bash
 python scripts/check_release.py
 python scripts/check_release.py --model
+python scripts/check_preprocessing.py
 ```
 
-The model check performs a synthetic forward pass. It does not reproduce the paper results without compatible processed data and checkpoints.
+The checks validate both SoundSpaces and GWA feature layouts and run a synthetic preprocessing pipeline. They do not reproduce the paper results without the corresponding raw datasets and training runs.
 
 ---
 
 ## 2. Data Preparation
 
-The released code consumes precomputed RIR spectra and geometric context features. Arrange the data as follows:
+The repository includes dataset-specific preprocessing for both benchmarks used by MiNAF.
 
-```text
-data/
-  processed/
-    <scene>/
-      log_magnitude.h5
-      phase_spectrum.h5
-      features.npy
-      split_indices.pkl
-  GWA/
-    <scene>/
-      hybrid/
-        sim_config.json
+### 2.1 SoundSpaces / Replica
+
+Place SoundSpaces RIRs, Replica metadata, and the room mesh under `data/`, then run:
+
+```bash
+python scripts/preprocess_soundspaces.py --scene office_4
 ```
 
-See [DATA_FORMAT.md](DATA_FORMAT.md) for the complete tensor layout, filename convention, and normalization metadata expected by the loader.
+SoundSpaces uses eight occupancy features and produces 6,152-dimensional context vectors. Train with:
 
-The current model snapshot expects 1,024 rays and a flattened context vector of length `6 * 1024 + 14 = 6158` for each transmitter and receiver point.
+```bash
+python train_pl.py dataset_type=soundspaces apt=office_4 n_occlusion=8
+```
+
+### 2.2 GWA
+
+Place a GWA scene under `data/GWA/<scene>/`, then run:
+
+```bash
+python scripts/preprocess_gwa.py --scene room_a
+```
+
+GWA uses 14 occupancy features and produces 6,158-dimensional context vectors. Train with:
+
+```bash
+python train_pl.py dataset_type=gwa apt=room_a n_occlusion=14
+```
+
+See [PREPROCESSING.md](PREPROCESSING.md) for raw-data layouts, custom paths, stage controls, and compatibility details. See [DATA_FORMAT.md](DATA_FORMAT.md) for the generated HDF5 and feature contracts.
 
 ---
 
 ## 3. Training
 
-Train MiNAF on a processed scene:
+Train MiNAF on a processed GWA scene:
 
 ```bash
-python train_pl.py apt=room_a exp_name=minaf_room_a
+python train_pl.py \
+  dataset_type=gwa \
+  apt=room_a \
+  n_occlusion=14 \
+  exp_name=minaf_room_a
 ```
 
 Example GPU configuration:
@@ -98,6 +126,8 @@ Example GPU configuration:
 ```bash
 python train_pl.py \
   apt=room_a \
+  dataset_type=gwa \
+  n_occlusion=14 \
   data_root=/path/to/processed \
   geometry_root=/path/to/GWA \
   trainer.accelerator=gpu \
@@ -114,7 +144,11 @@ Training logs and checkpoints are written under `results/<scene>/<experiment>/`.
 Evaluate a trained checkpoint by setting `ckpt_path` in `conf/config.yaml` or overriding it from the command line:
 
 ```bash
-python test_pl.py apt=room_a ckpt_path=/path/to/model.ckpt
+python test_pl.py \
+  dataset_type=gwa \
+  apt=room_a \
+  n_occlusion=14 \
+  ckpt_path=/path/to/model.ckpt
 ```
 
 The evaluation script reconstructs RIR waveforms and reports spectral and acoustic metrics, including T60, C50, EDT, SNR, and PSNR.
@@ -123,7 +157,7 @@ The evaluation script reconstructs RIR waveforms and reports spectral and acoust
 
 ## Acknowledgements
 
-The code structure and neural acoustic field workflow were adapted from [Learning Neural Acoustic Fields (NAF)](https://github.com/aluo-x/Learning_Neural_Acoustic_Fields) and subsequently modified for MiNAF, including the explicit geometric context encoder and a refactor to PyTorch Lightning. Please cite both MiNAF and NAF when building on this implementation.
+The code structure, spectral preprocessing, and neural acoustic field workflow were adapted from [Learning Neural Acoustic Fields (NAF)](https://github.com/aluo-x/Learning_Neural_Acoustic_Fields) and subsequently modified for MiNAF, including the explicit geometric context encoder, GWA support, streaming preprocessing, and a refactor to PyTorch Lightning. Please cite both MiNAF and NAF when building on this implementation.
 
 ---
 
